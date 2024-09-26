@@ -9,9 +9,16 @@ interface GuestUser {
   name: string;
   booking_id: string;
 }
+interface Booking {
+  booking_id: string;
+  start_datetime: string;
+  end_datetime: string;
+  room_id: number;
+  user_id: number;
+}
 
 const GuestPage: React.FC = () => {
-  const [guestUsers, setGuestUsers] = useState<GuestUser[]>([]);
+  const [guestUsers, setGuestUsers] = useState<(GuestUser & Booking)[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const router = useRouter();
@@ -19,8 +26,20 @@ const GuestPage: React.FC = () => {
   useEffect(() => {
     const fetchGuestUsers = async () => {
       try {
-        const data = await fetchAPI("/guest_users/");
-        setGuestUsers(data);
+        // ゲストユーザー情報を取得
+        const guestData = await fetchAPI("/guest_users/");
+        // すべての予約情報を取得
+        const bookingsData = await fetchAPI("/bookings/");
+
+        // 各ゲストユーザーに対応する予約情報をフィルタリング
+        const combinedData = guestData.map((user: GuestUser) => {
+          const booking = bookingsData.find(
+            (b: Booking) => b.booking_id === user.booking_id
+          );
+          return { ...user, ...booking }; // ゲストユーザー情報と予約情報をマージ
+        });
+
+        setGuestUsers(combinedData);
       } catch (err) {
         if (err instanceof Error) {
           setError(err.message);
@@ -52,8 +71,32 @@ const GuestPage: React.FC = () => {
               key={user.guest_user_id}
               className="border-b border-gray-200 py-4"
             >
-              <p className="text-lg font-semibold">{user.name}</p>
+              <p className="text-lg font-semibold">{user.name}様</p>
               <p>予約ID: {user.booking_id}</p>
+              {user.start_datetime && user.end_datetime ? (
+                <>
+                  <p>
+                    開始日時:{" "}
+                    {new Date(user.start_datetime).toLocaleString("ja-JP", {
+                      month: "long", // 月 (何月)
+                      day: "numeric", // 日 (何日)
+                      hour: "numeric", // 時 (何時)
+                      minute: "numeric", // 分 (何分)
+                    })}
+                  </p>
+                  <p>
+                    終了日時:{" "}
+                    {new Date(user.end_datetime).toLocaleString("ja-JP", {
+                      month: "long", // 月 (何月)
+                      day: "numeric", // 日 (何日)
+                      hour: "numeric", // 時 (何時)
+                      minute: "numeric", // 分 (何分)
+                    })}
+                  </p>
+                </>
+              ) : (
+                <p>予約情報が見つかりませんでした。</p>
+              )}
             </div>
           ))
         ) : (
