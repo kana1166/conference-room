@@ -19,15 +19,8 @@ const GuestPage: React.FC = () => {
   useEffect(() => {
     const fetchGuestUsers = async () => {
       try {
-        const response = await fetchAPI("/guest_users/");
-        console.log("API response:", response);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data: GuestUser[] = await response.json(); // 直接json()を呼び出す
+        const data = await fetchAPI("/guest_users/");
         setGuestUsers(data);
-
-        console.log("data", data);
       } catch (err) {
         if (err instanceof Error) {
           setError(err.message);
@@ -35,7 +28,7 @@ const GuestPage: React.FC = () => {
           setError("An unknown error occurred");
         }
       } finally {
-        setLoading(false); // ローディング完了
+        setLoading(false);
       }
     };
 
